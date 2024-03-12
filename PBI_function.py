@@ -1,37 +1,28 @@
 import pandas as pd
 
-
-def rank_to_points(rank):  
+def rank_to_points(rank: int)->int:  
     if rank == 1:   # rank one get 3 points...etc
         return 3
     elif rank == 2:
         return 2
     else:
-        return 1
+        return 1    
 
-
-
-
-def count_multi(data, field):  # count the number of non empty cell in a col, i.e return the number of ticks in the  field
+def count_multi(data: pd.DataFrame, field: str)->list:  # count the number of non empty cell in a col, i.e return the number of ticks in the  field
     rtn = (data[field].notna() & (data[field] != 'No Answer')).sum()
     return rtn
-    
 
-
-
-def count_single(data, field):
+def count_single(data: pd.DataFrame, field: str)->dict:
     options = make_unique(data, field)
     fulldatas = data[field].values.tolist()
     fulldatas = [x for x in fulldatas if str(x) != 'nan']
-   
     ranking_question = any(len(sublist) > 1 for sublist in fulldatas)  # if the sublist of fulldates contain more then one element, then it is a ranking question
-
     calculation = {}          
+    
     i = 0
     for fulldata in fulldatas:
         
-                
-         for option in options:
+        for option in options:
             if option in fulldata: 
                 if ranking_question is True:  #if ranking question, pass it to rank to points for calculation of rank         
                             
@@ -64,8 +55,7 @@ def count_single(data, field):
   
     return rtn        
 
-
-def total_answers(rawdata, fields): # check how many respondents answered that question
+def total_answers(rawdata: pd.DataFrame, fields: str)->int: # check how many respondents answered that question
     columns = fields['code'].tolist() # some question only have one col "Yes" /"No", some have more then one col e.g multiple choice question, but does not matter, it will work
     rawdata['Total'] = rawdata.apply(lambda row: 0 if all(pd.isna(row[col]) for col in columns) else 1, axis=1) #Add a new col "total" and set it to 1 if any of the cell in the row is not empty
     value_counts = rawdata['Total'].value_counts()
@@ -74,13 +64,11 @@ def total_answers(rawdata, fields): # check how many respondents answered that q
     else:
         return 1000000000000   # should be 0, but it has problem if divided by 0, so lets make it super big number, and when it is divided, it will be 0
 
-
-def df_values_tolist(dataframe, col_name):
-    column_values = dataframe[col_name].unique().tolist()
+def df_values_tolist(data: pd.DataFrame, field: str)-> list:
+    column_values = data[field].unique().tolist()
     return column_values    
     
-
-def make_unique(data, field):
+def make_unique(data: pd.DataFrame, field: str)-> list:
     # Check if each column is completely empty
     is_empty = data.isnull().all()
     # Iterate over the columns and fill in "No Answers" where the column is empty, because if the whole col is empty the split does not work
@@ -97,14 +85,8 @@ def make_unique(data, field):
 
     return rtn.values.tolist()
 
+def cal_summary(field_list: pd.DataFrame, rawdata: pd.DataFrame, tally: pd.DataFrame, section: list, tablefield: str, value: str) -> pd.DataFrame:
 
-    
-    
-   
-                          
-                               
-def cal_summary(field_list, rawdata, tally, section, tablefield, value):
-    
     rawdata = tally.merge(rawdata, how="left", on=["Token", "Token"])  #marge tally with rawdata
         
     if tablefield == 'all': # don't do anything to raw data, because we want to calculate ALL respondents
@@ -118,7 +100,6 @@ def cal_summary(field_list, rawdata, tally, section, tablefield, value):
     if len(field_list)==0:
         print ('Empty question list, check if this section exist '+str(section))
         exit()
-    
     
     questions = field_list['question'].drop_duplicates()  # get q question dataframe with out duplications
   
@@ -147,9 +128,7 @@ def cal_summary(field_list, rawdata, tally, section, tablefield, value):
                 countas = count_single(rawdata, row['code'])   # return the number for each choices or score (if ranking question)
              
                 for counta in countas:
-    
-               
-                                
+                    
                     outputdata.append({
                                     
                                     'AA-Question': question,
@@ -163,11 +142,8 @@ def cal_summary(field_list, rawdata, tally, section, tablefield, value):
                                 }) 
     return outputdata
 
-
-               
-def overall_calculations(rawdata, field_list, tally, sections, breakdown_bys):
+def overall_calculations(rawdata: pd.DataFrame, field_list: pd.DataFrame, tally: pd.DataFrame, sections: list, breakdown_bys: dict) -> dict:
       
-    
     tablefields =    {'all':['all']}  #this is the fields that need to break up, first one is all, i.e all data
     # for each of the fields that needs break down, get its value from tally, make it unique, and return as list, to do that we use db_values_tolist function
     for filter_by in breakdown_bys:
@@ -221,7 +197,6 @@ def overall_calculations(rawdata, field_list, tally, sections, breakdown_bys):
                             combined_item['Rank 3 '+tablefield+' '+ cat] = sub_item['Rank 3 '+tablefield+' '+ cat]
                             break
                                          
-                             
             combined_data.append(combined_item)
 
         data1 = pd.DataFrame(combined_data)
