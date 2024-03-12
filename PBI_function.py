@@ -1,12 +1,8 @@
 import pandas as pd
 
 def rank_to_points(rank: int)->int:  
-    if rank == 1:   # rank one get 3 points...etc
-        return 3
-    elif rank == 2:
-        return 2
-    else:
-        return 1    
+    points_mapping = {1: 3, 2: 2}
+    return points_mapping.get(rank, 1)  
 
 def count_multi(data: pd.DataFrame, field: str)->int:  # count the number of non empty cell in a col, i.e return the number of ticks in the  field
     rtn = (data[field].notna() & (data[field] != 'No Answer')).sum()
@@ -55,10 +51,10 @@ def count_single(data: pd.DataFrame, field: str)->dict:
   
     return rtn        
 
-def total_answers(rawdata: pd.DataFrame, fields: str)->int: # check how many respondents answered that question
-    columns = fields['code'].tolist() # some question only have one col "Yes" /"No", some have more then one col e.g multiple choice question, but does not matter, it will work
-    rawdata['Total'] = rawdata.apply(lambda row: 0 if all(pd.isna(row[col]) for col in columns) else 1, axis=1) #Add a new col "total" and set it to 1 if any of the cell in the row is not empty
-    value_counts = rawdata['Total'].value_counts()
+def total_answers(data: pd.DataFrame, field: str)->int: # check how many respondents answered that question
+    columns = field['code'].tolist() # some question only have one col "Yes" /"No", some have more then one col e.g multiple choice question, but does not matter, it will work
+    data['Total'] = data.apply(lambda row: 0 if all(pd.isna(row[col]) for col in columns) else 1, axis=1) #Add a new col "total" and set it to 1 if any of the cell in the row is not empty
+    value_counts = data['Total'].value_counts()
     if 1 in value_counts:
         return value_counts[1]
     else:
