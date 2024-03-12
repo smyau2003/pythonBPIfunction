@@ -8,7 +8,7 @@ def rank_to_points(rank: int)->int:
     else:
         return 1    
 
-def count_multi(data: pd.DataFrame, field: str)->list:  # count the number of non empty cell in a col, i.e return the number of ticks in the  field
+def count_multi(data: pd.DataFrame, field: str)->int:  # count the number of non empty cell in a col, i.e return the number of ticks in the  field
     rtn = (data[field].notna() & (data[field] != 'No Answer')).sum()
     return rtn
 
