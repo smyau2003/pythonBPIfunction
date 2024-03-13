@@ -1,24 +1,52 @@
 import pandas as pd
 
 def rank_to_points(rank: int)->int:  
+    # return the points according to the rank (rank 1 is 3 points...etc)  
     points_mapping = {1: 3, 2: 2}
     return points_mapping.get(rank, 1)  
+
+
+def make_unique(data: pd.DataFrame, field: str)-> list:
+    # This function returns the unique value(s) in the colmun in a form of a list
+    # This function will also handle if it is a ranking question 
+    # Ranking question appear as line break in each cell
+    
+    # Check if each column is completely empty
+    is_empty = data.isnull().all()
+    # Iterate over the columns and fill in "No Answers" where the column is empty, because if the whole col is empty the split does not work
+    for col in data.columns:
+        if is_empty[col]:
+            data.fillna({col:"No Answer"}, inplace=True)  
+  
+    data[field] = data[field].str.split('\n')   # splite the value in by line break (if any)
+    data = data.explode(field) # make it into a list,  note, the 1st element is the first choice, ....etc
+    data = data.reset_index(drop=True)
+
+    # Remove missing values and duplicates from the field column
+    rtn = data[field].dropna().drop_duplicates()  # without empty and duplicatiom
+
+    return rtn.values.tolist()  # return the results in a list
+
 
 def count_multi(data: pd.DataFrame, field: str)->int:  # count the number of non empty cell in a col, i.e return the number of ticks in the  field
     rtn = (data[field].notna() & (data[field] != 'No Answer')).sum()
     return rtn
 
 def count_single(data: pd.DataFrame, field: str)->dict:
-    options = make_unique(data, field)
-    fulldatas = data[field].values.tolist()
-    fulldatas = [x for x in fulldatas if str(x) != 'nan']
+    # return the number for each answer option 
+    # if it is a ranking question, return the points for each option
+    options = make_unique(data, field)  # see the function above, this will give the answers options (i.e Yes or No,)
+    fulldatas = data[field].values.tolist() # get all the data in the col and make it into a list
+    fulldatas = [x for x in fulldatas if str(x) != 'nan'] # take out all the empty answers (as no need to count)
     ranking_question = any(len(sublist) > 1 for sublist in fulldatas)  # if the sublist of fulldates contain more then one element, then it is a ranking question
-    calculation = {}          
+    
+    calculation = {}  # get read to store the calculation results          
     
     i = 0
-    for fulldata in fulldatas:
+    
+    for fulldata in fulldatas:  # looping the fulldatas  eg .['Yes','Yes','No', 'Yes'....etc]
         
-        for option in options:
+        for option in options: #looping the unique option e.g['Yes' or 'No']
             if option in fulldata: 
                 if ranking_question is True:  #if ranking question, pass it to rank to points for calculation of rank         
                             
@@ -30,22 +58,22 @@ def count_single(data: pd.DataFrame, field: str)->dict:
                     
                        calculation[i] = {
                                 'ans':option,
-                                'points':1,
-                                'rank' : 'rank 1'
+                                'points':1,    # if not a ranking question, assign point 1 for counting
+                                'rank' : 'rank 1' # let it be rank 1 
                         }
                 
             i = i +1             
           
-    df = pd.DataFrame(calculation).T  
-    pointsdf = df.groupby('ans')['points'].sum().reset_index() 
-    rankdf = df.pivot_table(index='ans', columns='rank', aggfunc='size', fill_value=0).reset_index()
-    pointsdf = pointsdf.merge(rankdf, how="left", on='ans')
+    df = pd.DataFrame(calculation).T   # Turn it intoa dataframe 
+    pointsdf = df.groupby('ans')['points'].sum().reset_index()  # calcuating the points (if not ranking question, this will be the number of counts)
+    rankdf = df.pivot_table(index='ans', columns='rank', aggfunc='size', fill_value=0).reset_index()  # using pivot table to count the numbers of rank 1, 2 and 3 (for non ranking questions always rank 1)
+    pointsdf = pointsdf.merge(rankdf, how="left", on='ans') #merge the two, so now we have a dataframe with points, rank 1, rank 2, rank 3 (or rank 4, 5 ...etc)
     
-    rtn = {}
+    rtn = {}  #turn this dataframe back to a dictionary and return the results
     for index, row in pointsdf[0:len(pointsdf)].iterrows():
         rtn[row['ans']] = { 'points' : row['points'], 
                             'rank 1' : row['rank 1'],
-                            'rank 2' : row['rank 2'] if 'rank 2' in row else '0',
+                            'rank 2' : row['rank 2'] if 'rank 2' in row else '0',  #if not ranking question, then no rank 2 and rank 3, so set to 0
                             'rank 3' : row['rank 3'] if 'rank 3' in row else '0'
                           }                                               
   
@@ -54,7 +82,7 @@ def count_single(data: pd.DataFrame, field: str)->dict:
 def total_answers(data: pd.DataFrame, field: str)->int: # check how many respondents answered that question
     columns = field['code'].tolist() # some question only have one col "Yes" /"No", some have more then one col e.g multiple choice question, but does not matter, it will work
     data['Total'] = data.apply(lambda row: 0 if all(pd.isna(row[col]) for col in columns) else 1, axis=1) #Add a new col "total" and set it to 1 if any of the cell in the row is not empty
-    value_counts = data['Total'].value_counts()
+    value_counts = data['Total'].value_counts()  
     if 1 in value_counts:
         return value_counts[1]
     else:
@@ -64,22 +92,7 @@ def df_values_tolist(data: pd.DataFrame, field: str)-> list:
     column_values = data[field].unique().tolist()
     return column_values    
     
-def make_unique(data: pd.DataFrame, field: str)-> list:
-    # Check if each column is completely empty
-    is_empty = data.isnull().all()
-    # Iterate over the columns and fill in "No Answers" where the column is empty, because if the whole col is empty the split does not work
-    for col in data.columns:
-        if is_empty[col]:
-            data.fillna({col:"No Answer"}, inplace=True)  
-  
-    data[field] = data[field].str.split('\n')
-    data = data.explode(field)
-    data = data.reset_index(drop=True)
 
-    # Remove missing values and duplicates from the field column
-    rtn = data[field].dropna().drop_duplicates()
-
-    return rtn.values.tolist()
 
 def cal_summary(field_list: pd.DataFrame, rawdata: pd.DataFrame, tally: pd.DataFrame, section: list, tablefield: str, value: str) -> pd.DataFrame:
 
