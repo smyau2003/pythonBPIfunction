@@ -1,6 +1,6 @@
 import pandas as pd
 
-
+#simon
 def rank_to_points(rank: int)->int:  
     # return the points according to the rank (rank 1 is 3 points...etc)  
     points_mapping = {1: 3, 2: 2}
