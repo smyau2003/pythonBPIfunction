@@ -150,6 +150,7 @@ def cal_summary(field_list: pd.DataFrame, rawdata: pd.DataFrame, tally: pd.DataF
                 
                 outputdata.append({
                                 
+                                'QNo' : row['QNo'],
                                 'AA-Question': question,
                                 'AB-Answers': row['field'],
                                 'Scores /  No. '+str(tablefield)+' '+str(value): score_v, # therefore we have to count the ticks in each col
@@ -158,6 +159,7 @@ def cal_summary(field_list: pd.DataFrame, rawdata: pd.DataFrame, tally: pd.DataF
                                 'Rank 2 '+str(tablefield)+' '+str(value) : '0',
                                 'Rank 3 '+str(tablefield)+' '+str(value) : '0',
                                 'Total Answered '+str(tablefield)+' '+str(value):total_answer
+                                
                             })
             else: # if question is same a field, it is a Yes/No question, single choice question or ranking question
                 countas = count_single(rawdata, row['code'])   # return the number for each choices or score (if ranking question)
@@ -166,6 +168,7 @@ def cal_summary(field_list: pd.DataFrame, rawdata: pd.DataFrame, tally: pd.DataF
                     
                     outputdata.append({
                                     
+                                    'QNo' : row['QNo'],
                                     'AA-Question': question,
                                     'AB-Answers': counta,
                                     'Scores /  No. '+str(tablefield)+' '+str(value): countas[counta]['points'],
@@ -213,10 +216,12 @@ def overall_calculations(rawdata: pd.DataFrame, field_list: pd.DataFrame, tally:
         combined_data = []
 
         for item in finaldata['all']:
+            QNo = item['QNo']
             question = item['AA-Question']
             answer = item['AB-Answers']
         
             combined_item = {
+                'QNo': QNo,
                 'AA-Question': question,
                 'AB-Answers': answer}
 
@@ -242,8 +247,9 @@ def overall_calculations(rawdata: pd.DataFrame, field_list: pd.DataFrame, tally:
 
         data1 = pd.DataFrame(combined_data)
         data1['Scores /  No. '+tablefield+' '+ cat] = data1['Scores /  No. '+tablefield+' '+ cat].astype(float)
-        
+
         output[section]=data1
-              
+
+  
     
     return output            
